@@ -124,11 +124,11 @@ defaultConfig host port = do
           }
 
 {-
-test :: IO ()
-test = do
+test :: T.Text -> IO ()
+test str = do
     Just cfg <- defaultConfig "127.0.0.1" "8012"
     log <- initSyslog cfg
-    log USER Debug "testing hsyslog-tcp"
+    log USER Debug str
 -}
 
 --------------------------------------------------------------------------------

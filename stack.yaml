@@ -1,0 +1,12 @@
+resolver: lts-9.1
+
+packages:
+- .
+
+extra-deps:
+- hsyslog-4
+- hsyslog-udp-0.1.2
+
+flags: {}
+
+extra-package-dbs: []

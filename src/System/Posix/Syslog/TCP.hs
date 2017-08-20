@@ -1,5 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+  Module      :  System.Posix.Syslog.TCP
+  Maintainer  :  omeragacan@gmail.com
+  Stability   :  provisional
+  Portability :  Posix
+
+  Log messages to syslog over a network via TCP, with protocols such as
+  <https://tools.ietf.org/html/rfc5423 RFC 5424> or
+  <https://tools.ietf.org/html/rfc3163 RFC 3164>.
+
+  Most of the code adapted from <http://hackage.haskell.org/package/hsyslog-udp hsyslog-udp>.
+
+-}
 module System.Posix.Syslog.TCP
   (
     -- * Haskell API to syslog via TCP
@@ -133,7 +146,7 @@ test str = do
 
 --------------------------------------------------------------------------------
 -- * Protocol implementations adapted from
--- <http://hackage.haskell.org/package/hsyslog-udp hsyslog>.
+-- <http://hackage.haskell.org/package/hsyslog-udp hsyslog-udp>.
 
 newtype Protocol = Protocol
   { getProtocol

@@ -18,6 +18,7 @@ module System.Posix.Syslog.TCP
     -- * Haskell API to syslog via TCP
     initSyslog
   , SyslogFn
+  , SyslogConn (..)
   , SyslogConfig (..)
   , defaultConfig
 
@@ -70,30 +71,43 @@ import System.Posix.Syslog.UDP hiding (Protocol, SyslogConfig (..), SyslogFn,
                                 rsyslogPacket, rsyslogProtocol)
 --------------------------------------------------------------------------------
 
--- | Return a function that logs to syslog via TCP.
---
--- The function re-throws exceptions, blocks when the TCP socket is not ready
--- for writing.
-initSyslog :: SyslogConfig -> IO SyslogFn
-initSyslog config = do
-    let addr = _address config
-    socket <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
-    N.connect socket (N.addrAddress addr)
-    return $ \fac sev msg ->
-      case maskedPriVal (_severityMask config) fac sev of
-        Nothing -> return ()
-        Just priVal -> do
-          time <- getCurrentTime
-          let bs = getProtocol (_protocol config)
-                   priVal time (_hostName config) (_appName config)
-                   (_processId config) msg
-          N.sendAll socket bs
-
 type SyslogFn
   =  L.Facility -- ^ facility to log to
   -> Severity   -- ^ severity under which to log
   -> T.Text     -- ^ message body (should not contain newline)
   -> IO ()
+
+data SyslogConn = SyslogConn
+  { -- | Callback for sending logs to the connected remote syslog server. This
+    -- function re-throws exceptions, blocks when the TCP socket is not ready
+    -- for writing.
+    _syslogConnSend  :: SyslogFn
+    -- | Callback for closing the connection.
+  , _syslogConnClose :: IO ()
+  }
+
+-- | Connect to the remote syslog server over TCP.
+--
+-- See also documentation for `SyslogConn`.
+initSyslog :: SyslogConfig -> IO SyslogConn
+initSyslog config = do
+    let addr = _address config
+    socket <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
+    N.connect socket (N.addrAddress addr)
+    let
+      send_fn fac sev msg =
+        case maskedPriVal (_severityMask config) fac sev of
+          Nothing -> return ()
+          Just priVal -> do
+            time <- getCurrentTime
+            let bs = getProtocol (_protocol config)
+                     priVal time (_hostName config) (_appName config)
+                     (_processId config) msg
+            N.sendAll socket bs
+
+      close_fn = N.close socket
+
+    return (SyslogConn send_fn close_fn)
 
 -- | Configuration options for connecting and logging to your syslog socket.
 data SyslogConfig = SyslogConfig

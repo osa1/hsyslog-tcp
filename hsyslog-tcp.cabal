@@ -10,7 +10,7 @@ maintainer:          omeragacan@gmail.com
 copyright:           2017 Ömer Sinan Ağacan
 category:            System
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.md, CHANGELOG.md
 cabal-version:       >=1.10
 
 source-repository head

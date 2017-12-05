@@ -56,6 +56,7 @@ module System.Posix.Syslog.TCP
   ) where
 
 --------------------------------------------------------------------------------
+import Control.Exception (onException, mask)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import Data.Monoid
@@ -92,22 +93,24 @@ data SyslogConn = SyslogConn
 initSyslog :: SyslogConfig -> IO SyslogConn
 initSyslog config = do
     let addr = _address config
-    socket <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
-    N.connect socket (N.addrAddress addr)
-    let
-      send_fn fac sev msg =
-        case maskedPriVal (_severityMask config) fac sev of
-          Nothing -> return ()
-          Just priVal -> do
-            time <- getCurrentTime
-            let bs = getProtocol (_protocol config)
-                     priVal time (_hostName config) (_appName config)
-                     (_processId config) msg
-            N.sendAll socket bs
+    mask $ \restore -> do
+      socket <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
+      restore (N.connect socket (N.addrAddress addr)) `onException` N.close socket
 
-      close_fn = N.close socket
+      let
+        send_fn fac sev msg =
+          case maskedPriVal (_severityMask config) fac sev of
+            Nothing -> return ()
+            Just priVal -> do
+              time <- getCurrentTime
+              let bs = getProtocol (_protocol config)
+                       priVal time (_hostName config) (_appName config)
+                       (_processId config) msg
+              N.sendAll socket bs
 
-    return (SyslogConn send_fn close_fn)
+        close_fn = N.close socket
+
+      return (SyslogConn send_fn close_fn)
 
 -- | Configuration options for connecting and logging to your syslog socket.
 data SyslogConfig = SyslogConfig

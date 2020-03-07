@@ -37,7 +37,6 @@ module System.Posix.Syslog.TCP
     -- ** Re-exports from <http://hackage.haskell.org/package/hsyslog-4 hsyslog>
   , L.Priority (..)
   , L.Facility (..)
-  , L.PriorityMask (..)
 
     -- ** Newtypes for various String/Int values
     -- | Refer to
@@ -148,7 +147,7 @@ defaultConfig host port = do
           { _appName = appName
           , _hostName = hostName
           , _processId = processId
-          , _severityMask = L.NoMask
+          , _severityMask = [minBound..maxBound]
           , _address = address
           , _protocol = rsyslogTCPProtocol
           }
